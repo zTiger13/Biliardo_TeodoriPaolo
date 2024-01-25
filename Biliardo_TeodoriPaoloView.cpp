@@ -32,6 +32,8 @@ BEGIN_MESSAGE_MAP(CBiliardoTeodoriPaoloView, CView)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
 	ON_WM_TIMER()
+//	ON_WM_WINDOWPOSCHANGING()
+//	ON_WM_WINDOWPOSCHANGED()
 END_MESSAGE_MAP()
 
 // Costruzione/distruzione di CBiliardoTeodoriPaoloView
@@ -64,6 +66,19 @@ void CBiliardoTeodoriPaoloView::OnDraw(CDC* pDC)
 		return;
 
 	// TODO: aggiungere qui il codice di disegno per i dati nativi.
+
+	GetClientRect(&rct);
+
+	hdiff = downright.x - rct.BottomRight().x;
+	vdiff = downright.y - rct.BottomRight().y;
+
+	if ((velx == 0) && (vely == 0)) {
+		if ((posx >= downright.x - r) && (hdiff >= 1)) posx = downright.x - r;
+		if ((posy >= downright.y - r) && (vdiff >= 1)) posy = downright.y - r;
+	}
+
+	upleft = rct.TopLeft();
+	downright = rct.BottomRight();
 
 	//campo
 	pDC->FillSolidRect(upleft.x,upleft.y,downright.x-upleft.x,downright.y-upleft.y,RGB(21,88,67));
@@ -171,9 +186,10 @@ void CBiliardoTeodoriPaoloView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: aggiungere qui il codice del gestore di messaggi e/o chiamare il codice predefinito
 
+
 	//serve per ridisegnare la linea tra il cursore e la palla
 	if ((velx == 0) && (vely == 0)) {
-		Invalidate();
+		InvalidateRect(rct,FALSE);
 		UpdateWindow();
 	}
 
@@ -185,28 +201,37 @@ void CBiliardoTeodoriPaoloView::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: aggiungere qui il codice del gestore di messaggi e/o chiamare il codice predefinito
 
-	//update posizione
 	posx += velx / fps;
 	posy += vely / fps;
 
 	//controllo eventuale rimbalzo
 
+	GetClientRect(&rct);
+	hdiff = downright.x - rct.BottomRight().x;
+	vdiff = downright.y - rct.BottomRight().y;
+
 	if (((posx >= downright.x - r) && (velx > 0))) {
 		posx = 2 * (downright.x - r) - posx;
-		velx = -velx;
+		velx = -fabs(velx);
+		velx = (100 - smorz) * velx / 100;
+		if (hdiff >= 1) posx = downright.x - r;
 	}
 	else if ((posx <= upleft.x + r) && (velx < 0)) {
 		posx = 2 * (upleft.x + r) - posx;
-		velx = -velx;
+		velx = fabs(velx);
+		velx = (100 - smorz) * velx / 100;
 	}
 
 	if (((posy >= downright.y - r) && (vely > 0))) {
 		posy = 2 * (downright.y - r) - posy;
-		vely = -vely;
+		vely = -fabs(vely);
+		vely = (100 - smorz) * vely / 100;
+		if (vdiff >= 1) posy = downright.y - r;
 	}
 	else if ((posy <= upleft.y + r) && (vely < 0)) {
 		posy = 2 * (upleft.y + r) - posy;
-		vely = -vely;
+		vely = fabs(vely);
+		vely = (100 - smorz) * vely / 100;
 	}
 
 	//attrito dinamico
@@ -227,8 +252,9 @@ void CBiliardoTeodoriPaoloView::OnTimer(UINT_PTR nIDEvent)
 		KillTimer(1);
 	}
 	
-	Invalidate();
+	InvalidateRect(rct, FALSE);
 	UpdateWindow();
 
 	CView::OnTimer(nIDEvent);
 }
+
